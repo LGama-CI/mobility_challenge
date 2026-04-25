@@ -6,7 +6,7 @@ module controller(
     input wire lane_available,                  // Faixa disponível para parar
     input wire request_lane_change_accepted,    // Pedido de mudança de faixa aceito
     input wire has_car_right,                   // Carro à direita
-    input wire max_speed_limit,                 // Velocidade máxima da via
+    input wire [7:0] max_speed_limit,                 // Velocidade máxima da via
     output reg buzzer,                          // Alarme 
     output reg sets,                            // Setas
     output reg hazards,                         // Pisca aleta
@@ -17,13 +17,13 @@ module controller(
                REQUESTING_LANE_CHANGE = 4'b0100, STOPPING = 4'b0101, CHECKING_LANE_RIGHT = 4'b0110,
                STOPPED = 4'b0111;
 
-    localparam ALERT_DURATION = 2'b11;
+    localparam ALERT_DURATION = 4'b1111;
 
     reg [3:0] state;
     reg [3:0] next_state;
     reg [3:0] counter;
 
-    wire min_speed_limit;
+    wire [7:0] min_speed_limit;
     assign min_speed_limit = max_speed_limit >> 1;
 
     always @(posedge clk or posedge rst) begin
@@ -49,6 +49,7 @@ module controller(
                     next_state = ALERTING;
             end
             ALERTING: begin
+                counter = counter + 1;
                 if (counter >= ALERT_DURATION) begin
                     next_state = CHECKING_LANE;
                 end else begin
