@@ -1,17 +1,19 @@
 module freq_divisor (
     input wire clk,
-    output reg clk_out
+    input wire rst,
+    output wire clk_out
 );
 
     reg [24:0] counter; 
 
-    always @(posedge clk) begin
-        counter <= counter + 1'b1;
+    always @(posedge clk or negedge rst) begin
+        if (!rst) begin
+            counter <= 25'h0;
+        end else begin
+            counter <= counter + 1'b1;
+        end
     end
 
-    always @(posedge counter[24]) begin                
-        clk_out <= ~clk_out;
-    end
-
+    assign clk_out = counter[24]; 
 
 endmodule

@@ -1,6 +1,4 @@
-`include "counter.v"
-`include "freq_divisor.v"
-module controller(
+module controller_sim(
     input wire clk,
     input wire rst,
     input wire [7:0] speed,
@@ -8,7 +6,7 @@ module controller(
     input wire lane_available,
     input wire request_lane_change_accepted,
     input wire has_car_right,
-    //input wire [7:0] max_speed_limit,
+    input wire [7:0] max_speed_limit,
     output reg buzzer,
     output reg sets,
     output reg hazards,
@@ -20,32 +18,29 @@ module controller(
                REQUESTING_LANE_CHANGE = 4'b0100, STOPPING = 4'b0101, CHECKING_LANE_RIGHT = 4'b0110,
                STOPPED = 4'b0111;
 
-    localparam ALERT_DURATION = 3'b011, max_speed_limit = 4'b1111;
+    localparam ALERT_DURATION = 4'b1000;
 
     reg [3:0] state;
     reg [3:0] next_state;
-    wire [2:0] count;
+    reg [3:0] counter;
 
     wire [7:0] min_speed_limit;
     assign min_speed_limit = max_speed_limit >> 1;
 
-    wire clk_div;
-    freq_divisor freq_div(
-        .clk(clk),
-        .rst(rst),
-        .clk_out(clk_div)
-    );
-    counter alert_counter(
-        .clk(clk_div),
-        .rst(rst),
-        .count(count)
-    );
- 
-    always @(posedge clk or negedge rst) begin
-        if (!rst)
+    always @(posedge clk or posedge rst) begin
+        if (rst)
             state <= IDLE;
         else
             state <= next_state;
+    end
+
+    always @(posedge clk or posedge rst) begin
+        if (rst)
+            counter <= 0;
+        else if (state == ALERTING && counter < ALERT_DURATION)
+            counter <= counter + 1;
+        else
+            counter <= 0;
     end
 
     always @(*) begin
@@ -64,7 +59,7 @@ module controller(
             end
 
             ALERTING: begin
-                if (count >= ALERT_DURATION)
+                if (counter >= ALERT_DURATION)
                     next_state = CHECKING_LANE;
             end
 
@@ -84,7 +79,7 @@ module controller(
                 brake = 1;
                 if (speed <= min_speed_limit)
                     next_state = STOPPING;
-                else if (!request_lane_change_accepted) begin
+                else if (request_lane_change_accepted) begin
                     next_state = CHECKING_LANE_RIGHT;
                     brake = 0;
                     sets = 1;
