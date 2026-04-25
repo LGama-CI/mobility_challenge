@@ -1,5 +1,5 @@
 `timescale 1ns/1ps
-`include "controller.v"
+`include "controller_sim.v"
 
 module controller_tb;
 
@@ -21,10 +21,7 @@ wire hazards;
 wire brake;
 wire request_lane_change;
 
-// ========================
-// DUT
-// ========================
-controller dut (
+controller_sim dut (
     .clk(clk),
     .rst(rst),
     .speed(speed),
@@ -40,14 +37,8 @@ controller dut (
     .request_lane_change(request_lane_change)
 );
 
-// ========================
-// CLOCK
-// ========================
 always #5 clk = ~clk;
 
-// ========================
-// DECODIFICADOR DE ESTADO
-// ========================
 function [200:0] state_name;
     input [3:0] s;
     begin
@@ -65,16 +56,11 @@ function [200:0] state_name;
     end
 endfunction
 
-// ========================
-// MONITOR PRINCIPAL
-// ========================
 initial begin
     $dumpfile("controller.vcd");
     $dumpvars(0, controller_tb);
 
-    $display("===========================================================================");
     $display("TIME | STATE            | SPD | drv | lane | right | acc | brk | set | haz | buz");
-    $display("===========================================================================");
 end
 
 always @(posedge clk) begin
@@ -93,9 +79,6 @@ always @(posedge clk) begin
     );
 end
 
-// ========================
-// MONITOR DE TRANSIÇÃO
-// ========================
 reg [3:0] prev_state;
 
 always @(posedge clk) begin
@@ -109,9 +92,6 @@ always @(posedge clk) begin
     prev_state <= dut.state;
 end
 
-// ========================
-// MONITOR DE EVENTOS
-// ========================
 always @(posedge clk) begin
     if (request_lane_change)
         $display(">>> EVENT: Pedido de mudança de faixa @%0t", $time);
@@ -123,9 +103,6 @@ always @(posedge clk) begin
         $display(">>> EVENT: Freando... speed=%0d @%0t", speed, $time);
 end
 
-// ========================
-// ASSERTIONS SIMPLES
-// ========================
 always @(posedge clk) begin
     if (dut.state == 4'b0111 && speed > 1) begin
         $display("!!! ERRO: STOPPED com speed > 0 @%0t", $time);
@@ -133,9 +110,6 @@ always @(posedge clk) begin
     end
 end
 
-// ========================
-// ESTÍMULOS
-// ========================
 initial begin
     clk = 0;
     rst = 1;
@@ -150,16 +124,12 @@ initial begin
 
     #10 rst = 0;
 
-    // ------------------------
     // CENÁRIO 1: motorista dorme
-    // ------------------------
     speed = 60;
     driver_off = 1;
     #50;
 
-    // ------------------------
     // CENÁRIO 2: pode parar
-    // ------------------------
     lane_available = 1;
     #40;
 
@@ -172,9 +142,7 @@ initial begin
     driver_off = 0;
     #40;
 
-    // ------------------------
     // CENÁRIO 3: mudança de faixa
-    // ------------------------
     speed = 70;
     driver_off = 1;
     lane_available = 0;
