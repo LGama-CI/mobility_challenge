@@ -1,0 +1,17 @@
+`timescale 1ns/1ps
+module test_tb ();
+
+    reg clk;
+    reg sw0;
+    reg led0;
+
+     // Clock
+    always #5 clk = ~clk;
+
+    test instance_blink(
+        .clk(clk),
+        .sw0(sw0),
+        .led0(led0)
+    );
+
+endmodule
