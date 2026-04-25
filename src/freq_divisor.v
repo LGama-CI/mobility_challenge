@@ -1,4 +1,4 @@
-module freq_diviser (
+module freq_divisor (
     input wire clk,
     output reg clk_out
 );
